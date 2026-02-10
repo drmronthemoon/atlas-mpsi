@@ -75,6 +75,25 @@ def login_screen():
 
 # --- APPLICATION PRINCIPALE ---
 def main_app():
+    # Chargement des données
+    data = load_json(DATA_FILE, {"planning": [], "exercices": [], "kholles": []})
+
+    # Conversion en Pandas DataFrame
+    df_plan = pd.DataFrame(data.get("planning", []), columns=["Date", "Matière", "Type", "Description", "Statut"])
+    df_exos = pd.DataFrame(data.get("exercices", []), columns=["Matière", "Chapitre", "Réf", "État"])
+    df_khol = pd.DataFrame(data.get("kholles", []), columns=["Date", "Matière", "Colleur"])
+
+    # --- CORRECTION ICI : CONVERSION DES DATES ---
+    # On force la colonne "Date" à être reconnue comme une vraie date, sinon Streamlit plante
+    if not df_plan.empty:
+        df_plan["Date"] = pd.to_datetime(df_plan["Date"], errors='coerce').dt.date
+    
+    if not df_khol.empty:
+        df_khol["Date"] = pd.to_datetime(df_khol["Date"], errors='coerce').dt.date
+    # ---------------------------------------------
+
+    # Onglets
+    tab1, tab2, tab3 = st.tabs(["📅 Planning", "📝 Exercices", "🎓 Kholles"])
     # Son de démarrage (Via lecteur HTML caché car les navigateurs bloquent l'autoplay)
     if os.path.exists(SOUND_FILE):
         st.audio(SOUND_FILE, autoplay=True)
