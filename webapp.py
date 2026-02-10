@@ -75,6 +75,42 @@ def login_screen():
 
 # --- APPLICATION PRINCIPALE ---
 def main_app():
+    # ... (début de main_app inchangé) ...
+
+    # --- CORRECTION ROBUSTE DU CHARGEMENT ---
+    data = load_json(DATA_FILE, {"planning": [], "exercices": [], "kholles": []})
+
+    # 1. Création des DataFrames
+    df_plan = pd.DataFrame(data.get("planning", []), columns=["Date", "Matière", "Type", "Description", "Statut"])
+    df_exos = pd.DataFrame(data.get("exercices", []), columns=["Matière", "Chapitre", "Réf", "État"])
+    df_khol = pd.DataFrame(data.get("kholles", []), columns=["Date", "Matière", "Colleur"])
+
+    # 2. Fonction de nettoyage des dates (Crucial !)
+    def clean_date_column(df, col_name):
+        if not df.empty and col_name in df.columns:
+            # On force la conversion en datetime (dayfirst=True gère le format fr JJ/MM/AAAA)
+            df[col_name] = pd.to_datetime(df[col_name], dayfirst=True, errors='coerce')
+            # On convertit les Timestamp en objets date python simples (et on remplace les erreurs par None)
+            df[col_name] = df[col_name].apply(lambda x: x.date() if pd.notnull(x) else None)
+        return df
+
+    # 3. Fonction de nettoyage des textes (Pour éviter les bugs si une case est vide/null)
+    def clean_text_columns(df):
+        # Remplace les 'NaN' (vides) par une chaine vide "" pour éviter les plantages
+        return df.fillna("")
+
+    # Application du nettoyage
+    df_plan = clean_date_column(df_plan, "Date")
+    df_plan = clean_text_columns(df_plan)
+
+    df_khol = clean_date_column(df_khol, "Date")
+    df_khol = clean_text_columns(df_khol)
+    
+    df_exos = clean_text_columns(df_exos)
+    # ---------------------------------------------
+
+    # Onglets (La suite reste identique...)
+    tab1, tab2, tab3 = st.tabs(["📅 Planning", "📝 Exercices", "🎓 Kholles"])
     # Chargement des données
     data = load_json(DATA_FILE, {"planning": [], "exercices": [], "kholles": []})
 
